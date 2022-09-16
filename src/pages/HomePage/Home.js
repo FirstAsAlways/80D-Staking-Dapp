@@ -3,458 +3,163 @@ import { useDispatch, useSelector } from "react-redux";
 import { connectWallet } from "../../redux/blockchain/blockchainActions";
 import { fetchData } from "./../../redux/data/dataActions";
 import * as s from "./../../styles/globalStyles";
-import masterHunter from "../masterHunter";
-import starHunter from "../starHunter";
-import hunter from "../hunter";
 import Loader from "../../components/Loader/loader";
 import PublicCountdown from "../../components/Countdown/publicCountdown";
-import TeamCountdown from "../../components/Countdown/teamCountdown";
-import MasterHunterCountdown from "../../components/Countdown/masterHunterCountdown";
-import StarHunterCountdown from "../../components/Countdown/starHunterCountdown";
-import HunterCountdown from "../../components/Countdown/hunterCountdown";
-import Navbar from "../../components/Navbar/Navbar";
-// Add this import line at the top
-const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
-const web3 = createAlchemyWeb3("https://eth-rinkeby.alchemyapi.io/v2/nZn20L-4EPgloJesoSx35hnTO8cK6c7o");
-var Web3 = require('web3');
-var Contract = require('web3-eth-contract');
-const { MerkleTree } = require('merkletreejs');
-const keccak256 = require('keccak256');
+const truncate = (input, len) =>
+    input.length > len ? `${input.substring(0, len)}...` : input;
 
-// Master Hunter MerkleTree
-const leafNodes = masterHunter.map(addr => keccak256(addr));
-const merkleTreeMaster = new MerkleTree(leafNodes, keccak256, { sortPairs: true });
-const rootHashMaster = merkleTreeMaster.getRoot();
-console.log('Master Hunter Merkle Tree\n', merkleTreeMaster.toString());
+function Stake() {
+
+    const dispatch = useDispatch();
+    const blockchain = useSelector((state) => state.blockchain);
+
+    const [totalStaked, setTotalStaked] = useState(0);
+    const [totalMinted, setTotalMinted] = useState(0);
+    const [supply, setTotalSupply] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [reveal, setReveal] = useState(true);
+    const [staked, setStaked] = useState([]);
+    const [userNFTToken, setuserNFTToken] = useState([]);
+    const [CONFIG, SET_CONFIG] = useState({
+        CONTRACT_ADDRESS: "",
+        SCAN_LINK: "",
+        NETWORK: {
+            NAME: "",
+            SYMBOL: "",
+            ID: 0,
+        },
+        NFT_NAME: "",
+        SYMBOL: "",
+        MAX_SUPPLY: 1,
+        WEI_COST: 0,
+        DISPLAY_COST: 0,
+        GAS_LIMIT: 0,
+        MARKETPLACE: "",
+        MARKETPLACE_LINK: "",
+        SHOW_BACKGROUND: false,
+    });
+
+    const getConfig = async () => {
+        const configResponse = await fetch("/config/config.json", {
+            headers: {
+                "Content-Type": "application/json",
+                Accept: "application/json",
+            },
+        });
+        const config = await configResponse.json();
+        SET_CONFIG(config);
+    };
 
 
-// Star Hunter MerkleTree
-const leafNodesEarly = starHunter.map(addr => keccak256(addr));
-const merkleTreeEarly = new MerkleTree(leafNodesEarly, keccak256, { sortPairs: true });
-const rootHashEarly = merkleTreeEarly.getRoot();
-console.log('Star Hunter Merkle Tree\n', merkleTreeEarly.toString());
+    const getData = async () => {
+        setLoading(true);
+        if (blockchain.account !== "" && blockchain.smartContract !== null) {
+            dispatch(fetchData(blockchain.account));
 
-// Hunter  MerkleTree
-const leafNodesHunter = hunter.map(addr => keccak256(addr));
-const merkleTreeHunter = new MerkleTree(leafNodesHunter, keccak256, { sortPairs: true });
-const rootHashHunter = merkleTreeHunter.getRoot();
-console.log('Hunter Merkle Tree\n', merkleTreeHunter.toString());
+            // Total Overall NFTs Minted
+            const totalSupply = await blockchain.smartContract.methods
+                .totalSupply()
+                .call();
+            setTotalSupply(totalSupply);
+
+            // Total Staked 
+            const totalStaked = await blockchain.smartContract.methods
+                .totalStaked()
+                .call();
+            setTotalStaked(totalStaked);
+
+            // Total Minted
+            const totalMinted = await blockchain.smartContract.methods
+                .balanceOf(blockchain.account)
+                .call();
+            setTotalMinted(totalMinted);
+
+            // Revealed or Not
+            const reveal = await blockchain.smartContract.methods
+                .revealed()
+                .call();
+            setReveal(reveal);
+
+            // Get User Minted NFT
+            const tokenIds = await getUserMintedNFT(totalSupply, blockchain.account);
+            setuserNFTToken(tokenIds);
+
+            const stakedIds = [];
+            for (let i = 1; i <= tokenIds.length; i++) {
+                const stakedNFT = await blockchain.smartContract.methods
+                    .vault(i)
+                    .call();
+                if (stakedNFT[1] != '0') {
+                    stakedIds.push(i);
+                }
+            }
+            setStaked(stakedIds);
+            console.log({ staked });
 
 
 
-function Home() {
+            // Total Claimed API Call
+        }
+    };
 
-  const dispatch = useDispatch();
-  const blockchain = useSelector((state) => state.blockchain);
-  const data = useSelector((state) => state.data);
-  const [claimingNft, setClaimingNft] = useState(false);
-  const [mintDone, setMintDone] = useState(false);
-  const [supply, setTotalSupply] = useState(0);
-  const [feedback, setFeedback] = useState("");
-  const [statusAlert, setStatusAlert] = useState("");
-  const [mintAmount, setMintAmount] = useState(1);
-  const [displayCost, setDisplayCost] = useState(0);
-  const [state, setState] = useState(-1);
-  const [nftCost, setNftCost] = useState(-1);
-  const [canMintWL, setCanMintWL] = useState(false);
-  const [canMintEA, setCanMintEA] = useState(false);
-  const [disable, setDisable] = useState(false);
-  const [max, setMax] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [proof, setProof] = useState([]);
-  const [totalMint, setTotalMint] = useState(0);
-  const [CONFIG, SET_CONFIG] = useState({
-    CONTRACT_ADDRESS: "",
-    SCAN_LINK: "",
-    NETWORK: {
-      NAME: "",
-      SYMBOL: "",
-      ID: 0,
-    },
-    NFT_NAME: "",
-    SYMBOL: "",
-    MAX_SUPPLY: 1,
-    WEI_COST: 0,
-    DISPLAY_COST: 0,
-    GAS_LIMIT: 0,
-    MARKETPLACE: "",
-    MARKETPLACE_LINK: "",
-    SHOW_BACKGROUND: false,
-  });
-
-  const claimNFTs = async () => {
-    let cost = nftCost;
-    cost = Web3.utils.toWei(String(cost), "ether");
-
-    let gasLimit = CONFIG.GAS_LIMIT;
-    let totalCostWei = String(cost * mintAmount);
-    let totalGasLimit = String(gasLimit * mintAmount);
-    setFeedback(`Minting your ${CONFIG.NFT_NAME}`);
-    setClaimingNft(true);
-    setLoading(true);
-
-    blockchain.smartContract.methods
-      .mint(mintAmount, proof)
-      .send({
-        gasLimit: String(totalGasLimit),
-        to: CONFIG.CONTRACT_ADDRESS,
-        from: blockchain.account,
-        value: totalCostWei,
-      })
-      .once("error", (err) => {
-        console.log(err);
-        setFeedback("Sorry, something went wrong please try again later.");
-        setClaimingNft(false);
-        setLoading(false);
-      })
-      .then((receipt) => {
-        setLoading(false);
-        setMintDone(true);
-        setFeedback(`Congratulation, your mint is successful.`);
-        setClaimingNft(false);
+    const stakeNFT = async (tokenId) => {
+        let gasLimit = CONFIG.GAS_LIMIT;
+        let totalGasLimit = String(gasLimit * 1);
+        setLoading(true);
         blockchain.smartContract.methods
-          .totalSupply()
-          .call()
-          .then((res) => {
-            setTotalSupply(res);
-          });
-        dispatch(fetchData(blockchain.account));
+            .stake([tokenId])
+            .send({
+                gasLimit: String(totalGasLimit),
+                to: CONFIG.CONTRACT_ADDRESS,
+                from: blockchain.account
+            })
+            .once("error", (err) => {
+                console.log(err);
+                setLoading(false);
+            })
+            .then((receipt) => {
+                blockchain.smartContract.methods
+                    .totalStaked()
+                    .call()
+                    .then((res) => {
+                        setTotalStaked(res);
+                    });
+                dispatch(fetchData(blockchain.account));
+                getData();
+                setLoading(false);
+            });
+    }
+
+    const unstakeNFT = async (tokenId) => {
+        console.log(tokenId);
+    }
+
+    useEffect(() => {
+        getConfig();
+        setTimeout(() => {
+            setLoading(false);
+        }, 1500);
+    }, []);
+
+    useEffect(() => {
         getData();
-      });
+    }, [blockchain.account]);
 
-  };
+    const getUserMintedNFT = async (tsupply, account) => {
+        const tokenIds = [];
+        for (let i = 0; i < tsupply; i++) {
+            const token = await blockchain.smartContract.methods
+                .ownerOf(i)
+                .call();
 
-
-  const decrementMintAmount = () => {
-    let newMintAmount = mintAmount - 1;
-    if (newMintAmount < 1) {
-      newMintAmount = 1;
-    }
-    setMintAmount(newMintAmount);
-    setDisplayCost(
-      parseFloat(nftCost * newMintAmount).toFixed(3)
-    );
-  };
-
-  const incrementMintAmount = () => {
-    let newMintAmount = mintAmount + 1;
-    newMintAmount > max
-      ? (newMintAmount = max)
-      : newMintAmount;
-    setDisplayCost(
-      parseFloat(nftCost * newMintAmount).toFixed(3)
-    );
-    setMintAmount(newMintAmount);
-  };
-
-  const maxNfts = () => {
-    setMintAmount(max);
-
-    setDisplayCost(
-      parseFloat(nftCost * max).toFixed(3)
-    );
-
-  };
-
-  const getData = async () => {
-    if (blockchain.account !== "" && blockchain.smartContract !== null) {
-      dispatch(fetchData(blockchain.account));
-      const totalSupply = await blockchain.smartContract.methods
-        .totalSupply()
-        .call();
-      setTotalSupply(totalSupply);
-      let currentState = await blockchain.smartContract.methods
-        .currentState()
-        .call();
-      setState(currentState);
-
-      //  no of nfts minted by user
-      let nftMintedByUser = await blockchain.smartContract.methods
-        .mintableAmountForUser(blockchain.account)
-        .call();
-      setMax(nftMintedByUser);
-      console.log({ nftMintedByUser });
-
-      // Nft states
-      if (currentState == 1) {
-        const walletAddress = "0xa78A8ff1fAbd680FFB4a810d5e8831AA71e18933";
-        console.log(blockchain.account);
-        if (blockchain.account != walletAddress) {
-
-          setFeedback(`You're not 8OD Member`);
-          setDisable(true);
-        } else {
-          if (nftMintedByUser > 0) {
-            setFeedback(`Welcome, you can mint up to ${nftMintedByUser} NFTs per transaction`);
-          } else {
-            setFeedback(`You've Minted all the NFTs`);
-            setDisable(true);
-          }
+            if (token === account) {
+                tokenIds.push(i);
+            }
         }
-        // Master Hunter
-      } else if (currentState == 2) {
-        const claimingAddress = keccak256(blockchain.account);
-        const hexProof = merkleTreeMaster.getHexProof(claimingAddress);
-        setProof(hexProof);
-        let mintMasterHunter = merkleTreeMaster.verify(hexProof, claimingAddress, rootHashMaster);
-        let mintMHContractMethod = await blockchain.smartContract.methods
-          .isMasterHunter(blockchain.account, hexProof)
-          .call();
-        if (mintMHContractMethod && mintMasterHunter) {
-          setCanMintEA(mintMasterHunter);
-          setFeedback(`Welcome Master Hunter Member, you can mint up to ${nftMintedByUser} NFTs`)
-        } else {
-          setFeedback(`Sorry, your wallet is not on the Master Hunter list`);
-          setDisable(true);
-        }
-      }
-      // Star Hunter
-      else if (currentState == 3) {
-        const claimingAddress = keccak256(blockchain.account);
-        const hexProof = merkleTreeEarly.getHexProof(claimingAddress);
-        setProof(hexProof);
-        let mintStarHunter = merkleTreeEarly.verify(hexProof, claimingAddress, rootHashEarly);
-        let mintSHContractMethod = await blockchain.smartContract.methods
-          .isStarHunter(blockchain.account, hexProof)
-          .call();
-        if (mintSHContractMethod && mintStarHunter) {
-          setCanMintEA(mintStarHunter);
-          setFeedback(`Welcome Star Hunter Member, you can mint up to ${nftMintedByUser} NFTs`)
-        } else {
-          setFeedback(`Sorry, your wallet is not on the Star Hunter list`);
-          setDisable(true);
-        }
-      }
-      // Hunter
-      else if (currentState == 4) {
-        const claimingAddress = keccak256(blockchain.account);
-        const hexProof = merkleTreeHunter.getHexProof(claimingAddress);
-        setProof(hexProof);
-        let mintHunter = merkleTreeHunter.verify(hexProof, claimingAddress, rootHashHunter);
-        let mintHContractMethod = await blockchain.smartContract.methods
-          .isHunter(blockchain.account, hexProof)
-          .call();
-        if (mintHContractMethod && mintHunter) {
-          setCanMintEA(mintHunter);
-          setFeedback(`Welcome Hunter Member, you can mint up to ${nftMintedByUser} NFTs`)
-        } else {
-          setFeedback(`Sorry, your wallet is not on the Hunter list`);
-          setDisable(true);
-        }
-      }
-      // Public
-      else {
-        setFeedback(`Welcome, you can mint up to ${nftMintedByUser} NFTs per transaction`)
-      }
-    }
-  };
-
-  const getDataWithAlchemy = async () => {
-    const abiResponse = await fetch("/config/abi.json", {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-
-
-    const abi = await abiResponse.json();
-    var contract = new Contract(abi, '0x6C4F4442F1B22d94212848E0EB20BcD72D619695');
-    contract.setProvider(web3.currentProvider);
-    // Get Total Supply
-    const totalSupply = await contract.methods
-      .totalSupply()
-      .call();
-    setTotalSupply(totalSupply);
-
-    // Get Contract State
-    let currentState = await contract.methods
-      .currentState()
-      .call();
-    setState(currentState);
-
-    // Set Price and Max According to State
-
-    if (currentState == 0) {
-      setStatusAlert("MINT NOT LIVE YET!");
-      setDisable(true);
-      setDisplayCost(0.00);
-      setMax(0);
-    }
-    else if (currentState == 1) {
-      let teamCost = await contract.methods
-        .costFreeMint()
-        .call();
-      setDisplayCost(web3.utils.fromWei(teamCost));
-      setNftCost(web3.utils.fromWei(teamCost));
-      setStatusAlert("8od Team + Galleries ");
-      setFeedback("Are you 8OD Member?");
-
-      let wlMax = await contract.methods
-        .maxMintAmountTeam()
-        .call();
-      setMax(wlMax);
-    }
-    else if (currentState == 2) {
-      let masterHunterCost = await contract.methods
-        .costWL()
-        .call();
-      setDisplayCost(web3.utils.fromWei(masterHunterCost));
-      setNftCost(web3.utils.fromWei(masterHunterCost));
-      setStatusAlert("MASTER HUNTER IS NOW LIVE!");
-      setFeedback("Are you MASTER HUNTER Member?");
-      let wlMax = await contract.methods
-        .maxMintAmountMasterHunter()
-        .call();
-      setMax(wlMax);
-    }
-    else if (currentState == 3) {
-      setStatusAlert("STAR HUNTER IS NOW LIVE!");
-      let starHunterCost = await contract.methods
-        .costWL()
-        .call();
-      setDisplayCost(web3.utils.fromWei(starHunterCost));
-      setNftCost(web3.utils.fromWei(starHunterCost));
-      setFeedback("Are you STAR HUNTER Member?");
-      let earlyMax = await contract.methods
-        .maxMintAmountStarHunter()
-        .call();
-      setMax(earlyMax);
-    }
-    else if (currentState == 4) {
-      setStatusAlert(" HUNTER IS NOW LIVE!");
-      let hunterCost = await contract.methods
-        .costWL()
-        .call();
-      setDisplayCost(web3.utils.fromWei(hunterCost));
-      setNftCost(web3.utils.fromWei(hunterCost));
-      setFeedback("Are you HUNTER Member?");
-      let earlyMax = await contract.methods
-        .maxMintAmountHunter()
-        .call();
-      setMax(earlyMax);
-    }
-    else {
-      let puCost = await contract.methods
-        .cost()
-        .call();
-      setDisplayCost(web3.utils.fromWei(puCost));
-      setNftCost(web3.utils.fromWei(puCost));
-      setStatusAlert("Public Mint is Live");
-      let puMax = await contract.methods
-        .maxMintAmountPublic()
-        .call();
-      setMax(puMax);
+        return tokenIds;
     }
 
-  }
-
-  const getConfig = async () => {
-    const configResponse = await fetch("/config/config.json", {
-      headers: {
-        "Content-Type": "application/json",
-        Accept: "application/json",
-      },
-    });
-    const config = await configResponse.json();
-    SET_CONFIG(config);
-  };
-
-  useEffect(() => {
-    getConfig();
-    getDataWithAlchemy();
-    setTimeout(() => {
-      setLoading(false);
-    }, 1500);
-  }, []);
-
-  useEffect(() => {
-    getData();
-  }, [blockchain.account]);
-
-
-  // Countdown Timer Team
-  let countDownTeam = new Date("Aug 31, 2022 00:00:00 GMT +5:00 ").getTime();
-  let nowTeam  = new Date().getTime();
-  let timeleftTeam  = countDownTeam  - nowTeam;
-  const [daysTeam, setDaysTeam ] = useState();
-  const [hoursTeam , setHourTeam ] = useState();
-  const [minutesTeam , setMintTeam ] = useState();
-  const [secondsTeam , setSecTeam ] = useState();
-  useEffect(() => {
-    const intervalPublic = setInterval(() => {
-      setDaysTeam(Math.floor(timeleftTeam / (1000 * 60 * 60 * 24)));
-      setHourTeam(
-        Math.floor((timeleftTeam % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      );
-      setMintTeam(Math.floor((timeleftTeam % (1000 * 60 * 60)) / (1000 * 60)));
-      setSecTeam(Math.floor((timeleftTeam % (1000 * 60)) / 1000));
-    }, 1000);
-    return () => clearInterval(intervalPublic);
-  }, [daysTeam, hoursTeam, minutesTeam, secondsTeam]);
-
-    // Countdown Timer Master Hunter
-    let countDownMH = new Date("Sep 01, 2022 00:00:00 GMT +5:00 ").getTime();
-    let nowMH= new Date().getTime();
-    let timeleftMH = countDownMH - nowMH;
-    const [daysMH, setDaysMH] = useState();
-    const [hoursMH, setHourMH] = useState();
-    const [minutesMH, setMintMH] = useState();
-    const [secondsMH, setSecMH] = useState();
-    useEffect(() => {
-      const intervalMH = setInterval(() => {
-        setDaysMH(Math.floor(timeleftMH / (1000 * 60 * 60 * 24)));
-        setHourMH(
-          Math.floor((timeleftMH % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        );
-        setMintMH(Math.floor((timeleftMH % (1000 * 60 * 60)) / (1000 * 60)));
-        setSecMH(Math.floor((timeleftMH % (1000 * 60)) / 1000));
-      }, 1000);
-      return () => clearInterval(intervalMH);
-    }, [daysMH, hoursMH, minutesMH, secondsMH]);
-
-
-    // Countdown Timer Star Hunter
-    let countDownSH = new Date("Sep 02, 2022 00:00:00 GMT +5:00 ").getTime();
-    let nowSH= new Date().getTime();
-    let timeleftSH = countDownSH - nowSH;
-    const [daysSH, setDaysSH] = useState();
-    const [hoursSH, setHourSH] = useState();
-    const [minutesSH, setMintSH] = useState();
-    const [secondsSH, setSecSH] = useState();
-    useEffect(() => {
-      const intervalSH = setInterval(() => {
-        setDaysSH(Math.floor(timeleftSH / (1000 * 60 * 60 * 24)));
-        setHourSH(
-          Math.floor((timeleftSH % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-        );
-        setMintSH(Math.floor((timeleftSH % (1000 * 60 * 60)) / (1000 * 60)));
-        setSecSH(Math.floor((timeleftSH % (1000 * 60)) / 1000));
-      }, 1000);
-      return () => clearInterval(intervalSH);
-    }, [daysSH, hoursSH, minutesSH, secondsSH]);
-
-   // Countdown Timer Hunter
-   let countDownH = new Date("Sep 03, 2022 00:00:00 GMT +5:00 ").getTime();
-   let nowH= new Date().getTime();
-   let timeleftH = countDownH - nowH;
-   const [daysH, setDaysH] = useState();
-   const [hoursH, setHourH] = useState();
-   const [minutesH, setMintH] = useState();
-   const [secondsH, setSecH] = useState();
-   useEffect(() => {
-     const intervalH = setInterval(() => {
-       setDaysH(Math.floor(timeleftH / (1000 * 60 * 60 * 24)));
-       setHourH(
-         Math.floor((timeleftH % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-       );
-       setMintH(Math.floor((timeleftH % (1000 * 60 * 60)) / (1000 * 60)));
-       setSecH(Math.floor((timeleftH % (1000 * 60)) / 1000));
-     }, 1000);
-     return () => clearInterval(intervalH);
-   }, [daysH, hoursH, minutesH, secondsH]);
-
-  // Countdown Timer Public
+      // Countdown Timer Public
   let countDownPublic = new Date("Sep 13, 2022 00:00:00 GMT +5:00 ").getTime();
   let nowPublic = new Date().getTime();
   let timeleftPublic = countDownPublic - nowPublic;
@@ -475,215 +180,163 @@ function Home() {
     return () => clearInterval(intervalPublic);
   }, [daysPublic, hoursPublic, minutesPublic, secondsPublic]);
 
-  return (
-    <>
+    return (
+        <>
+            {loading && <Loader />}
+            <s.Image src={"config/images/logo.png"} wid={"15"} style={{
+                "marginTop": "25px"
+            }} />
+            <s.SpacerLarge /><s.SpacerLarge />
+            <div className="container" style={{ width: "15%" }}>
+                {blockchain.account !== "" &&
+                    blockchain.smartContract !== null &&
+                    blockchain.errorMsg === "" ? (
+                    <s.Container ai={"center"} jc={"center"} fd={"row"}>
+                        <div className="btn btn-claim btn-lg">
 
-      {loading && <Loader />}
-      <s.Image src={"config/images/logo.png"} wid={"15"} style={{
-        "marginTop": "25px"
-      }} />
-      <s.FlexContainer jc={"center"} ai={"center"} fd={"row"}
-      >
-              <s.Table>
-          <table className="table">
-            <thead>
-              <tr>
-                <th scope="col" className="text-white">Group</th>
-                <th scope="col" className="text-white">Status</th>
-                <th scope="col" className="text-white">Mint Start</th>
-              </tr>
-            </thead>
-            <tbody className="table-group-divider">
-              <tr>
-                <td className="text-white">80D Team + Partners</td>
-                <td><s.Status color={state == 1 ? "#25EF09" : "#F70505"} /></td>
-                <td className="text-white text-center">
-                {state != 0 && daysTeam > -1 && hoursTeam > -1 && minutesTeam > -1 && secondsTeam > -1 ? (
-                    <TeamCountdown />
-                  ): "---"}
-                  
-                </td>
-              </tr>
-              <tr>
-                <td className="text-white">Master Hunter</td>
-                <td><s.Status color={state == 2 ? "#25EF09" : "#F70505"} /></td>
-                <td className="text-white  text-center">
-                {state != 0 && daysTeam > -1 && hoursTeam > -1 && minutesTeam > -1 && secondsTeam > -1 ? (
-                    <MasterHunterCountdown />
-                  ): "---"}
-                </td>
-              </tr>
-              <tr>
-                <td className="text-white">Star Hunter</td>
-                <td><s.Status color={state == 3 ? "#25EF09" : "#F70505"} /></td>
-                <td className="text-white  text-center">
-                {state != 0 && daysTeam > -1 && hoursTeam > -1 && minutesTeam > -1 && secondsTeam > -1 ? (
-                    <StarHunterCountdown />
-                  ): "---"}
-                </td>
-              </tr>
-              <tr>
-                <td className="text-white">Hunter</td>
-                <td><s.Status color={state == 4 ? "#25EF09" : "#F70505"} /></td>
-                <td className="text-white  text-center">
-                {state != 0 && daysTeam > -1 && hoursTeam > -1 && minutesTeam > -1 && secondsTeam > -1 ? (
-                    <HunterCountdown />
-                  ): "---"}
-                </td>
-              </tr>
-              <tr>
-                <td className="text-white">Public Sale</td>
-                <td><s.Status color={state == 5 ? "#25EF09" : "#F70505"} /></td>
-                <td className="text-white  text-center">
-                  {state != 0 && daysPublic > -1 && hoursPublic  > -1 && minutesPublic  > -1 && secondsPublic  > -1 ? (
-                    <PublicCountdown />
-                  ): "---"}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </s.Table>
+                            {truncate(blockchain.account, 15)}
+                        </div>
 
-        <s.Mint>
-          <s.TextTitle
-            size={3.0}
-            style={{
-              letterSpacing: "3px",
+                    </s.Container>
+                ) : (
+                    ""
+                )}
+            </div>
+            <s.SpacerLarge />
+            {/* Header */}
+            <div className="container">
+                <div className="row ">
+                    <div className="col-md-4">
+                        <div className="card  mx-sm-1 p-3">
+                            <div className=" text-white p-3 m-auto " >
+                                <span className="fa fa-info-circle" aria-hidden="true"></span>
+                            </div>
+                            <div className="text-white text-center mt-3"><h4>NFT's Minted</h4></div>
+                            <div className="text-white text-center mt-2"><h1>{totalMinted}</h1></div>
+                        </div>
+                    </div>
+                    <div className="col-md-4">
+                        <div className="card border-white mx-sm-1 p-3">
+                            <div className=" text-white p-3 m-auto " >
+                                <span className="fa fa-hourglass" aria-hidden="true"></span>
+                            </div>
+                            <div className="text-white text-center mt-3"><h4>Total Claimed</h4></div>
+                            <div className="text-white text-center mt-2"><h1>0</h1></div>
+                        </div>
+                    </div>
+                    <div className="col-md-4">
+                        <div className="card border-white mx-sm-1 p-3">
+                            <div className=" text-white p-3 m-auto " >
+                                <span className="fa fa-window-restore" aria-hidden="true"></span>
+                            </div>
+                            <div className="text-white text-center mt-3"><h4>Total Staked</h4></div>
+                            <div className="text-white text-center mt-2"><h1>{totalStaked}</h1></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-            }}
-          >
-            {/* {statusAlert} */}
-          </s.TextTitle>
-          <s.SpacerSmall />
-          <s.SpacerLarge />
-          <s.FlexContainer fd={"row"} ai={"center"} jc={"space-between"}>
-            <s.TextTitle>Available</s.TextTitle>
-            <s.TextTitle color={"var(--primary)"}>
-              {CONFIG.MAX_SUPPLY - supply} / {CONFIG.MAX_SUPPLY}
-            </s.TextTitle>
-          </s.FlexContainer>
-          <s.SpacerSmall />
-          <s.Line />
-          <s.SpacerSmall />
-          <s.FlexContainer fd={"row"} ai={"center"} jc={"space-between"}>
+            <s.SpacerLarge />
 
-            <s.TextTitle>Amount</s.TextTitle>
+            {/* NFT's Section */}
 
-            <s.AmountContainer ai={"center"} jc={"center"} fd={"row"}>
-              <s.StyledRoundButton
-                style={{ lineHeight: 0.4 }}
-                disabled={claimingNft ? 1 : 0}
-                onClick={(e) => {
-                  e.preventDefault();
-                  decrementMintAmount();
-                }}
-              >
-                -
-              </s.StyledRoundButton>
-              <s.SpacerMedium />
-              <s.TextDescription color={"var(--primary)"} size={"2.5rem"}>
-                {mintAmount}
-              </s.TextDescription>
-              <s.SpacerMedium />
-              <s.StyledRoundButton
-                disabled={claimingNft ? 1 : 0}
-                onClick={(e) => {
-                  e.preventDefault();
-                  incrementMintAmount();
-                }}
-              >
-                +
-              </s.StyledRoundButton>
-            </s.AmountContainer>
+            <div className="jumbotron container" style={{
+                background: "#01014D !important"
+            }}>
+                {blockchain.account !== "" &&
+                    blockchain.smartContract !== null &&
+                    blockchain.errorMsg === "" ? (
+                    <>
+                        <h2 className="title">My NFT's</h2>
+                        <s.SpacerLarge />
+                        <div className="flex-container">
+                            {
+                                userNFTToken.length > 0 ? (
+                                    userNFTToken.map((nft, index) => {
+                                        return <div className="flex-item border" key={index}>
+                                            {reveal ? <s.Image  ></s.Image> :
+                                                <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
+                                                    wid={"80"}></s.Image>}
+                                            {!staked.includes(nft) ? (
+                                                <>
+                                                <div className="d-flex justify-content-center">
+                                                    <button className="btn btn-stake"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            setTimeout(() => {
+                                                                stakeNFT(nft);
+                                                                setLoading(false);
+                                                            }, 1000);
+                                                        }}
+                                                    >Stake</button>
+                                                    
+                                                </div>
+                                                <s.SpacerSmall/>
+                                                </>
+                                            ) : (
+                                                <>
+                                                <div className="d-flex justify-content-around">
+                                                <PublicCountdown />
+                                                </div>
+                                                <s.SpacerSmall/>
+                                                <div className="d-flex justify-content-around">
+                                                    <button className="btn btn-claim"
+                                                        onClick={(e) => {
+                                                            e.preventDefault();
+                                                            setTimeout(() => {
+                                                                unstakeNFT(nft);
+                                                                setLoading(false);
+                                                            }, 1000);
+                                                        }}
+                                                    >Pay & Claim</button>
+                                                </div>
+                                                </>
+                                            )}
 
-            <s.maxButton
-              style={{ cursor: "pointer" }}
-              onClick={(e) => {
-                e.preventDefault();
-                maxNfts();
-              }}
-            >
-              MAX
-            </s.maxButton>
-          </s.FlexContainer>
+                                            <s.SpacerLarge />
+                                        </div>
+                                    })
+                                ) : (
+                                    <div className="col-md-12">
+                                        <p className="text-white">You don't have any NFTs For Stacking!!!</p>
+                                    </div>
+                                )
+                            }
 
-          <s.SpacerSmall />
-          <s.Line />
-          <s.SpacerSmall />
-          <s.FlexContainer fd={"row"} ai={"center"} jc={"space-between"}>
-            <s.TextTitle>Total Price</s.TextTitle>
-            <s.TextTitle color={"var(--primary)"}>{displayCost}</s.TextTitle>
-          </s.FlexContainer>
-          <s.SpacerSmall />
-          <s.Line />
+                        </div>
 
-          <s.SpacerLarge />
-          {blockchain.account !== "" &&
-            blockchain.smartContract !== null &&
-            blockchain.errorMsg === "" ? (
-            <s.Container ai={"center"} jc={"center"} fd={"row"}>
-              <s.connectButton
-                disabled={disable}
-                onClick={(e) => {
-                  e.preventDefault();
-                  claimNFTs();
-                }}
-              >
+                    </>
+                ) : (
+                    <>
+                        <s.connectButton
+                            style={{
+                                textAlign: "center",
+                                color: "#01004D",
+                                cursor: "pointer",
+                                margin: "auto",
+                                display: "block",
+                                background: "#fff",
+                                border: "#17a2b8"
+                            }}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                dispatch(connectWallet());
+                                setTimeout(() => {
+                                    getData();
+                                    setLoading(false);
+                                }, 2500);
+                            }}
+                            wid={"35%"}
+                        >
+                            Connect Wallet
+                        </s.connectButton>
+                    </>
+                )}
 
-                {claimingNft ? "Confirm Transaction in Wallet" : "Mint"}
-                {/* {mintDone && !claimingNft  ? feedback : ""} */}
-              </s.connectButton>{" "}
-            </s.Container>
-          ) : (
-            <>
-              {/* {blockchain.errorMsg === "" ? ( */}
-              <s.connectButton
-                style={{
-                  textAlign: "center",
-                  color: "#fff",
-                  cursor: "pointer",
-                }}
-                disabled={state == 0 ? 1 : 0}
-                onClick={(e) => {
-                  e.preventDefault();
-                  dispatch(connectWallet());
-                  getData();
-                }}
-              >
-                Connect Wallet
-              </s.connectButton>
-              {/* ) : ("")} */}
-            </>
-          )}
-          <s.SpacerLarge />
-          <s.SpacerLarge />
-          {blockchain.errorMsg !== "" ? (
-            <s.connectButton
-              style={{
-                textAlign: "center",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              {blockchain.errorMsg}
-            </s.connectButton>
-          ) : (
-            <s.TextDescription
-              style={{
-                textAlign: "center",
-                color: "#fff",
-                cursor: "pointer",
-              }}
-            >
-              {feedback}
-            </s.TextDescription>
-          )}
-        </s.Mint>
-        <s.Table></s.Table>
+            </div>
+        </>
+    );
 
-      </s.FlexContainer>
-    </>
-  );
 }
 
-export default Home;
+export default Stake;

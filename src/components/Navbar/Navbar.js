@@ -2,7 +2,6 @@ import React, { useEffect, useState, useRef } from "react";
 import { connect } from "../../redux/blockchain/blockchainActions";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchData } from "../../redux/data/dataActions";
-import Stake from "../../pages/StakePage/Stake";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import {
   Nav,
