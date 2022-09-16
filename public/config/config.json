@@ -1,0 +1,14 @@
+{
+  "CONTRACT_ADDRESS": "0x6C4F4442F1B22d94212848E0EB20BcD72D619695",
+  "SCAN_LINK": "https://etherscan.io/address/0x9f85344a2985E7d288b11EB6E2BF1b86E7646162",
+  "NETWORK": {
+    "NAME": "Ethereum Rinkeby",
+    "SYMBOL": "ETH",
+    "ID": 4
+  },
+  "NETWORK_ID_WALLET" :4,
+  "NFT_NAME": "8OD",
+  "SYMBOL": "8OD-C1",
+  "MAX_SUPPLY": 1000 ,
+  "GAS_LIMIT": 285000
+}

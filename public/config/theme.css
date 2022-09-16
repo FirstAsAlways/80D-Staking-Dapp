@@ -1,0 +1,153 @@
+:root {
+  --primary: #f7f7f7 !important;
+  --primary-text: #1a1a1a;
+  --secondary: #5fcde4;
+  --secondary-text: #ffffff;
+  --accent: #505050;
+  --accent-text: #ffffff;
+}
+
+body {
+  background: #000000 !important;
+  /* background-image: url("./images/bg.png") !important;
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: top; */
+}
+
+.flexContainer {
+  display: flex;
+  align-items: center;
+  justify-content: space-evenly;
+  vertical-align: middle;
+  margin: 20px auto;
+  width: 80%;
+}
+
+.flexItems {
+  width: 10%;
+}
+.flexItems > a > img {
+  width: 100%;
+}
+
+
+@media screen and (max-width: 480px) {
+  body {
+    background-size: auto;
+    background-position: center;
+    background-size: cover;
+  }
+}
+
+@media only screen and (max-width: 600px) {
+  .flexItems {
+    width: 15%;
+  }
+}
+
+.overlay {
+  background: #222222;
+  height: 100%;
+  position: fixed;
+  display: flex;
+  top: 0;
+  opacity: 0.5;
+  z-index: 5000;
+  width: 100%;
+}
+
+.spinner{
+  margin: auto;
+
+}
+
+.text-white{
+  font-size: 12px;
+}
+
+.table td, .table th {
+  padding: 0.20rem !important;
+  vertical-align: middle !important;
+}
+
+.table {
+  border: 1px solid #ffffff;
+  border-top-right-radius: 10px;
+  border-top-left-radius: 10px;
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
+  border-collapse: separate;
+
+}
+
+.table thead tr th{
+  border-top: none;
+}
+.table thead th {
+  font-weight: bolder;
+  font-size: 14px;
+}
+
+
+@media screen and (max-width: 768px) {
+  .table {
+    width: 90% !important;
+    margin: 20px auto;
+  }
+}
+
+
+.jumbotron{
+  background: #01014D !important;
+  border-radius: 20px !important;
+}
+
+.card {
+  border: 1px solid #fff !important;
+  border-radius: 20px !important;
+  background: #01014D !important;
+}
+
+.text-white {
+  font-size: 20px !important;
+}
+
+.title {
+  color: #fff;
+  font-size: 28px;
+}
+
+.border{
+  border-radius: 20px;;
+}
+
+.flex-container{
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap ;
+  justify-content:space-between;
+  align-items:center;
+  gap: 10px 20px;
+}
+
+.flex-item{
+  background: #000;
+  padding: 5px;
+  width: 30%;
+
+
+}
+
+.btn-stake{
+  background-color: #fff;
+  color: #01014D;
+  font-weight: bold;
+}
+
+.btn-claim{
+  background-color: #01014D;
+  color: #fff;
+  font-weight: bold;
+}
+
