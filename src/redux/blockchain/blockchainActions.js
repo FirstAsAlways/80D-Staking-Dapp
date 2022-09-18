@@ -52,6 +52,7 @@ const updateAccountRequest = (payload) => {
 export const connect = () => {
   return async (dispatch) => {
     dispatch(connectRequest());
+
     const abiResponse = await fetch("/config/abi.json", {
       headers: {
         "Content-Type": "application/json",
@@ -59,6 +60,15 @@ export const connect = () => {
       },
     });
     const abi = await abiResponse.json();
+
+    const abiStakeResponse = await fetch("/config/stakeabi.json", {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    const abiStake = await abiStakeResponse.json();
+
     const configResponse = await fetch("/config/config.json", {
       headers: {
         "Content-Type": "application/json",
@@ -66,6 +76,7 @@ export const connect = () => {
       },
     });
     const CONFIG = await configResponse.json();
+
     const { ethereum } = window;
     const metamaskIsInstalled = ethereum && ethereum.isMetaMask;
     if (metamaskIsInstalled) {
@@ -79,14 +90,21 @@ export const connect = () => {
           method: "net_version",
         });
         if (networkId == CONFIG.NETWORK.ID) {
-          const SmartContractObj = new Web3EthContract(
+
+          const SmartContractObjStake = new Web3EthContract(
+            abiStake,
+            CONFIG.CONTRACT_ADDRESS_STAKE
+          );
+
+          const SmartContractObjNFT = new Web3EthContract(
             abi,
-            CONFIG.CONTRACT_ADDRESS
+            CONFIG.CONTRACT_ADDRESS_NFT
           );
           dispatch(
             connectSuccess({
               account: accounts[0],
-              smartContract: SmartContractObj,
+              smartContractStake: SmartContractObjStake,
+              smartContractNFT: SmartContractObjNFT,
               web3: web3,
             })
           );
@@ -115,13 +133,23 @@ export const connectWallet = () => {
   return async (dispatch) => {
     dispatch(connectRequest());
     try {
-      const abiResponse = await fetch("/config/abi.json", {
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-      });
-      const abi = await abiResponse.json();
+
+    const abiResponse = await fetch("/config/abi.json", {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    const abi = await abiResponse.json();
+
+    const abiStakeResponse = await fetch("/config/stakeabi.json", {
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+    });
+    const abiStake = await abiStakeResponse.json();
+
       const configResponse = await fetch("/config/config.json", {
         headers: {
           "Content-Type": "application/json",
@@ -146,14 +174,19 @@ export const connectWallet = () => {
       });
       if (networkId == CONFIG.NETWORK_ID_WALLET || networkId == CONFIG.NETWORK.ID) {
 
-        const SmartContractObj = new Web3EthContract(
+        const SmartContractObjStake = new Web3EthContract(
+          abiStake,
+          CONFIG.CONTRACT_ADDRESS_STAKE
+        );
+        const SmartContractObjNFT = new Web3EthContract(
           abi,
-          CONFIG.CONTRACT_ADDRESS
+          CONFIG.CONTRACT_ADDRESS_NFT
         );
         dispatch(
           connectSuccess({
             account: accounts[0],
-            smartContract: SmartContractObj,
+            smartContractStake: SmartContractObjStake,
+            smartContractNFT: SmartContractObjNFT,
             web3: web3,
           })
         );
