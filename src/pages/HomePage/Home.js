@@ -5,7 +5,10 @@ import { fetchData } from "./../../redux/data/dataActions";
 import * as s from "./../../styles/globalStyles";
 import Loader from "../../components/Loader/loader";
 import PublicCountdown from "../../components/Countdown/publicCountdown";
-import  EmailModal  from "../../components/Modal/modal";
+import EmailModal from "../../components/Modal/modal";
+// Importing toastify module
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const truncate = (input, len) =>
   input.length > len ? `${input.substring(0, len)}...` : input;
@@ -26,7 +29,13 @@ function Stake() {
   const [date, setDate] = useState("");
   const [stakedObj, setStakedObj] = useState([]);
   const [userNFTToken, setuserNFTToken] = useState([]);
-  const [showModal , setShowModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [showPopUpModal, setShowPopUpModal] = useState(false);
+  const [claimCost , setCost] = useState(0);
+  const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
+  var Web3 = require('web3');
+  const web3 = createAlchemyWeb3("https://eth-rinkeby.alchemyapi.io/v2/nZn20L-4EPgloJesoSx35hnTO8cK6c7o");
+
   const [CONFIG, SET_CONFIG] = useState({
     CONTRACT_ADDRESS_STAKE: "",
     ONTRACT_ADDRESS_NFT: "",
@@ -125,6 +134,11 @@ function Stake() {
         .call();
       setReveal(reveal);
 
+      const cost = await blockchain.smartContractStake.methods
+      .claimCost()
+      .call();
+      setCost(web3.utils.fromWei(cost));
+
       // Get User Minted NFT
 
       const tokens = await getUserMintedNFT(totalSupply, blockchain.account);
@@ -133,9 +147,6 @@ function Stake() {
         const stakedNft = await getUserStakedNFT(tokens);
         if (stakedNft) {
           setStakedObj(stakedNft);
-          console.log({ stakedObj });
-
-
           setLoading(false);
         }
       }
@@ -172,12 +183,46 @@ function Stake() {
   }
 
   const unstakeNFT = async (tokenId) => {
-    setShowModal(true);
-    if(showModal) {
-      $('#staticBackdrop').modal('show');
-    }
+    alert('When you claim your physical art piece, your NFT will be burned(destroyed).');
+    setLoading(true);
+    let cost = claimCost;
+    cost = Web3.utils.toWei(String(cost), "ether");
+    console.log({cost});
+    let gasLimit = CONFIG.GAS_LIMIT;
+    let totalCostWei = String(cost * 1);
+    let totalGasLimit = String(gasLimit * 1);
+    blockchain.smartContractStake.methods
+    .payAndclaim([tokenId])
+    .send({
+      gasLimit: String(totalGasLimit),
+      to: CONFIG.CONTRACT_ADDRESS_STAKE,
+      from: blockchain.account,
+      value: totalCostWei,
+    })
+    .once("error", (err) => {
+      console.log(err);
+      setLoading(false);
+    })
+    .then(() => {
+      blockchain.smartContractStake.methods
+        .totalStaked()
+        .call()
+        .then((res) => {
+          setTotalStaked(res);
+        });
+      dispatch(fetchData(blockchain.account));
+      getData();
+      $('#emailmodal').modal('show');
+      setLoading(false);
+    });
+
+ 
+
+
+
 
   }
+
 
   useEffect(() => {
     getConfig();
@@ -270,31 +315,31 @@ function Stake() {
                 stakedObj.length > 0 ? (
                   userNFTToken.length > 0 ? (
                     stakedObj && stakedObj.map((nft, index) => {
-                      let nftDate = new Date( parseInt(nft.TIMESTAMP) * 1000);
+                      let nftDate = new Date(parseInt(nft.TIMESTAMP) * 1000);
                       nftDate = nftDate.setDate(nftDate.getDate() + 49);
                       return (
                         <>
-                         
+
                           <div className="flex-item border" key={index}>
                             {reveal ? <s.Image  ></s.Image> :
                               <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
                                 wid={"80"}></s.Image>}
                             <div className="d-flex justify-content-around">
-                              { nftDate > date  ? (
-                                <PublicCountdown date = {nft.TIMESTAMP} />
+                              {nftDate > date ? (
+                                <PublicCountdown date={nft.TIMESTAMP} />
                               ) : (
                                 <button className="btn btn-claim"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setTimeout(() => {
-                                    unstakeNFT(nft.TOKEN_ID);
-                                    setLoading(false);
-                                  }, 1000);
-                                }}
-                              >Claim Free</button>
-                              ) }
-                              
-                            
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setTimeout(() => {
+                                      unstakeNFT(nft.TOKEN_ID);
+                                      setLoading(false);
+                                    }, 1000);
+                                  }}
+                                >Claim Free</button>
+                              )}
+
+
                             </div>
                             <s.SpacerSmall />
                             <div className="d-flex justify-content-around">
@@ -306,7 +351,7 @@ function Stake() {
                                     setLoading(false);
                                   }, 1000);
                                 }}
-                              >Pay & Claim</button>
+                              >Buy Now</button>
                             </div>
 
                             <s.SpacerLarge />
@@ -354,7 +399,7 @@ function Stake() {
                     let newmap = stakedObj.map((el) => parseInt(el.TOKEN_ID));
                     return (
                       <>
-                        { newmap.indexOf(nft) == -1 ? (
+                        {newmap.indexOf(nft) == -1 ? (
                           <div className="flex-item border" key={index}>
                             {reveal ? <s.Image  ></s.Image> :
                               <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
@@ -419,22 +464,26 @@ function Stake() {
 
       {/* Modal COde */}
 
-      <div className="modal fade" id="staticBackdrop" data-backdrop="static" data-keyboard="false" tabIndex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
-                <div className="modal-dialog">
-                    <div className="modal-content">
-                        <div className="modal-header">
-                            <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT</h5>
-                            <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                                <span aria-hidden="true">&times;</span>
-                            </button>
-                        </div>
-                        <div className="modal-body">
-                            ...
-                        </div>
-                       
-                    </div>
-                </div>
+      <div className="modal fade" id="emailmodal" data-backdrop="static" data-keyboard="false" tabIndex="-1" aria-labelledby="emailmodal" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT</h5>
+              <button type="button" className="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
             </div>
+            <div className="modal-body">
+              <EmailModal />
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      {/* Pop Up Modal Code */}
+
+     
     </>
   );
 
