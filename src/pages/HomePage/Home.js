@@ -173,7 +173,9 @@ function Stake() {
 
   const unstakeNFT = async (tokenId) => {
     setShowModal(true);
-    console.log(tokenId);
+    if(showModal) {
+      $('#staticBackdrop').modal('show');
+    }
 
   }
 
@@ -186,33 +188,13 @@ function Stake() {
 
   useEffect(() => {
     getData();
-  }, [blockchain.account]);
+  }, [blockchain.account, showModal]);
 
 
-  // Countdown Timer Public
-  let countDownPublic = new Date("Sep 13, 2022 00:00:00 GMT +5:00 ").getTime();
-  let nowPublic = new Date().getTime();
-  let timeleftPublic = countDownPublic - nowPublic;
-  const [daysPublic, setDaysPublic] = useState();
-  const [hoursPublic, setHourPublic] = useState();
-  const [minutesPublic, setMintPublic] = useState();
-  const [secondsPublic, setSecPublic] = useState();
-  useEffect(() => {
-    const intervalPublic = setInterval(() => {
-      setDaysPublic(Math.floor(timeleftPublic / (1000 * 60 * 60 * 24)));
-      setHourPublic(
-        Math.floor((timeleftPublic % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-      );
-      setMintPublic(Math.floor((timeleftPublic % (1000 * 60 * 60)) / (1000 * 60)));
-      setSecPublic(Math.floor((timeleftPublic % (1000 * 60)) / 1000));
-    }, 1000);
-    return () => clearInterval(intervalPublic);
-  }, [daysPublic, hoursPublic, minutesPublic, secondsPublic]);
 
   return (
     <>
       {loading && <Loader />}
-      { showModal && <EmailModal/>}
       <s.Image src={"config/images/logo.png"} wid={"15"} style={{
         "marginTop": "25px"
       }} />
@@ -434,6 +416,25 @@ function Stake() {
         )}
 
       </div>
+
+      {/* Modal COde */}
+
+      <div className="modal fade" id="staticBackdrop" data-backdrop="static" data-keyboard="false" tabIndex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+                <div className="modal-dialog">
+                    <div className="modal-content">
+                        <div className="modal-header">
+                            <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT</h5>
+                            <button type="button" className="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div className="modal-body">
+                            ...
+                        </div>
+                       
+                    </div>
+                </div>
+            </div>
     </>
   );
 
