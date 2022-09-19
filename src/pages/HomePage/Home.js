@@ -6,14 +6,9 @@ import * as s from "./../../styles/globalStyles";
 import Loader from "../../components/Loader/loader";
 import PublicCountdown from "../../components/Countdown/publicCountdown";
 import EmailModal from "../../components/Modal/modal";
-// Importing toastify module
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 const truncate = (input, len) =>
   input.length > len ? `${input.substring(0, len)}...` : input;
-
-var stakedNFTs = {};
 
 function Stake() {
 
@@ -90,10 +85,10 @@ function Stake() {
   const getUserStakedNFT = async (tokenIds) => {
 
     const stakedObjArr = [];
-    for (let i = 0; i <= tokenIds.length; i++) {
+    for (let i = 0; i < tokenIds.length; i++) {
       const stakedObj = {};
       const stake = await blockchain.smartContractStake.methods
-        .vault(i)
+        .vault(tokenIds[i])
         .call();
 
       if (stake[2] == blockchain.account) {
