@@ -61,13 +61,13 @@ function EmailModal(props) {
 
                 <div className="form-check form-check-inline">
                     <input className="form-check-input" type="radio" id="inlineCheckbox1" name='user_option' value="Receive at 8OD marketplace" />
-                    <label className="form-check-label" for="inlineCheckbox1">Receive at 8OD marketplace
+                    <label className="form-check-label">Receive at 8OD marketplace
                     </label>
                 </div>
 
                 <div className="form-check form-check-inline">
                     <input className="form-check-input" type="radio" id="inlineCheckbox2" name='user_option' value="Receive at home" />
-                    <label className="form-check-label" for="inlineCheckbox2">Receive at home</label>
+                    <label className="form-check-label" >Receive at home</label>
                 </div>
                 <br /><br />
                 <p>
@@ -86,7 +86,7 @@ function EmailModal(props) {
             </form>
 
             {/* popup Modal */}
-            <div className="modal fade" id="congratulations" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+            <div className="modal fade" id="congratulations" tabIndex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
                 <div className="modal-dialog" role="document">
                     <div className="modal-content">
                         <div className="modal-header">

@@ -25,7 +25,7 @@ function Stake() {
   const [stakedObj, setStakedObj] = useState([]);
   const [userNFTToken, setuserNFTToken] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showPopUpModal, setShowPopUpModal] = useState(false);
+  const [burnToken, setBurnToken] = useState([]);
   const [claimCost , setCost] = useState(0);
   const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
   var Web3 = require('web3');
@@ -67,17 +67,17 @@ function Stake() {
 
 
 
-  const getUserMintedNFT = async (tsupply, account) => {
-    setLoading(true);
+  const getUserMintedNFT = async (tsupply, account, burn) => {
     const tokenIds = [];
-
     for (let i = 0; i < tsupply; i++) {
-      const address = await blockchain.smartContractNFT.methods
-        .ownerOf(i)
-        .call();
-      if (address === account) {
-        tokenIds.push(i);
-      }
+        if(!burn.includes(String(i))) {
+          const address = await blockchain.smartContractNFT.methods
+            .ownerOf(i)
+            .call();
+          if (address === account) {
+            tokenIds.push(i);
+          }
+        }
     }
     return tokenIds;
   }
@@ -102,6 +102,7 @@ function Stake() {
   }
 
   const getData = async () => {
+    setLoading(true);
     if (blockchain.account !== "" && blockchain.smartContractStake !== null) {
       dispatch(fetchData(blockchain.account));
 
@@ -129,23 +130,37 @@ function Stake() {
         .call();
       setReveal(reveal);
 
+      
+
       const cost = await blockchain.smartContractStake.methods
       .claimCost()
       .call();
       setCost(web3.utils.fromWei(cost));
 
-      // Get User Minted NFT
+      // Get Burn Tokens
+      const burn = await blockchain.smartContractStake.methods
+      .burnTokenIds()
+      .call();
 
-      const tokens = await getUserMintedNFT(totalSupply, blockchain.account);
-      if (tokens) {
-        setuserNFTToken(tokens);
-        const stakedNft = await getUserStakedNFT(tokens);
-        if (stakedNft) {
-          setStakedObj(stakedNft);
-          setLoading(false);
-        }
+      // Get Staked Tokens
+
+      const stakedToken = await blockchain.smartContractStake.methods
+      .tokensOfOwner(blockchain.account)
+      .call();
+
+      const stakedNft = await getUserStakedNFT(stakedToken);
+      if (stakedNft) {
+        setStakedObj(stakedNft);
       }
 
+      // Get User Minted NFT
+
+      const tokens = await getUserMintedNFT(totalSupply, blockchain.account, burn);
+      if (tokens) {
+        setuserNFTToken(tokens);
+
+      }
+      setLoading(false);
     }
   };
 
@@ -177,7 +192,37 @@ function Stake() {
       });
   }
 
-  const unstakeNFT = async (tokenId) => {
+  const unstakeNFT = async(tokenId) => {
+    setLoading(true);
+    let gasLimit = CONFIG.GAS_LIMIT;
+    let totalGasLimit = String(gasLimit * 1);
+    blockchain.smartContractStake.methods
+      .unstake(blockchain.account, [tokenId])
+      .send({
+        gasLimit: String(totalGasLimit),
+        to: CONFIG.CONTRACT_ADDRESS_STAKE,
+        from: blockchain.account
+      })
+      .once("error", (err) => {
+        console.log(err);
+        setLoading(false);
+      })
+      .then(() => {
+        blockchain.smartContractStake.methods
+          .totalStaked()
+          .call()
+          .then((res) => {
+            setTotalStaked(res);
+          });
+        dispatch(fetchData(blockchain.account));
+        getData();
+        setLoading(false);
+        alert("You have successfully unstake your NFT!!!");
+      });
+
+  }
+
+  const payAndClaimNFT = async (tokenId) => {
     alert('When you claim your physical art piece, your NFT will be burned(destroyed).');
     setLoading(true);
     let cost = claimCost;
@@ -210,12 +255,37 @@ function Stake() {
       $('#emailmodal').modal('show');
       setLoading(false);
     });
+  }
 
- 
-
-
-
-
+  const claimFreeNft = async (tokenId) => {
+    alert('When you claim your physical art piece, your NFT will be burned(destroyed).');
+    setLoading(true);
+    let gasLimit = CONFIG.GAS_LIMIT;
+    let totalGasLimit = String(gasLimit * 1);
+    blockchain.smartContractStake.methods
+    .claim([tokenId])
+    .send({
+      gasLimit: String(totalGasLimit),
+      to: CONFIG.CONTRACT_ADDRESS_STAKE,
+      from: blockchain.account,
+    })
+    .once("error", (err) => {
+      console.log(err);
+      setLoading(false);
+      alert('Something went wrong.');
+    })
+    .then(() => {
+      blockchain.smartContractStake.methods
+        .totalStaked()
+        .call()
+        .then((res) => {
+          setTotalStaked(res);
+        });
+      dispatch(fetchData(blockchain.account));
+      getData();
+      $('#emailmodal').modal('show');
+      setLoading(false);
+    });
   }
 
 
@@ -263,7 +333,7 @@ function Stake() {
               <div className=" text-white p-3 m-auto " >
                 <span className="fa fa-info-circle" aria-hidden="true"></span>
               </div>
-              <div className="text-white text-center mt-3"><h4>Total NFT's</h4></div>
+              <div className="text-white text-center mt-3"><h4>Your Minted NFTs</h4></div>
               <div className="text-white text-center mt-2"><h1>{totalMinted}</h1></div>
             </div>
           </div>
@@ -272,8 +342,8 @@ function Stake() {
               <div className=" text-white p-3 m-auto " >
                 <span className="fa fa-hourglass" aria-hidden="true"></span>
               </div>
-              <div className="text-white text-center mt-3"><h4>Total Claimed</h4></div>
-              <div className="text-white text-center mt-2"><h1>0</h1></div>
+              <div className="text-white text-center mt-3"><h4>Total Minted</h4></div>
+              <div className="text-white text-center mt-2"><h1>{supply}</h1></div>
             </div>
           </div>
           <div className="col-md-4">
@@ -319,21 +389,25 @@ function Stake() {
                             {reveal ? <s.Image  ></s.Image> :
                               <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
                                 wid={"80"}></s.Image>}
-                            <div className="d-flex justify-content-around">
+                            <div className="center-block">
                               {nftDate > date ? (
+                                <>
+                                <span className="text-center" style={{
+                                  display:"block",
+                                  color:"#fff"
+                                }}>Time Remaining to Claim Free</span>
                                 <PublicCountdown date={nft.TIMESTAMP} />
+                                </>
                               ) : (
                                 <button className="btn btn-claim"
                                   onClick={(e) => {
                                     e.preventDefault();
                                     setTimeout(() => {
-                                      unstakeNFT(nft.TOKEN_ID);
-                                      setLoading(false);
+                                      claimFreeNft(nft.TOKEN_ID);
                                     }, 1000);
                                   }}
                                 >Claim Free</button>
                               )}
-
 
                             </div>
                             <s.SpacerSmall />
@@ -343,7 +417,15 @@ function Stake() {
                                   e.preventDefault();
                                   setTimeout(() => {
                                     unstakeNFT(nft.TOKEN_ID);
-                                    setLoading(false);
+                                  }, 1000);
+                                }}
+                              >Unstake</button>
+
+                               <button className="btn btn-claim"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setTimeout(() => {
+                                    payAndClaimNFT(nft.TOKEN_ID);
                                   }, 1000);
                                 }}
                               >Buy Now</button>

@@ -149,5 +149,12 @@ body {
   background-color: #01014D;
   color: #fff;
   font-weight: bold;
+
+}
+
+.center-block{
+  display: block;
+  margin: auto;
+  text-align: center;
 }
 
