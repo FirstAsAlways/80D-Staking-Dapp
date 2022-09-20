@@ -26,10 +26,11 @@ function Stake() {
   const [userNFTToken, setuserNFTToken] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [burnToken, setBurnToken] = useState([]);
-  const [claimCost , setCost] = useState(0);
+  const [claimCost, setCost] = useState(0);
+  const [id, setId] = useState("");
   const { createAlchemyWeb3 } = require("@alch/alchemy-web3");
   var Web3 = require('web3');
-  const web3 = createAlchemyWeb3("https://eth-rinkeby.alchemyapi.io/v2/nZn20L-4EPgloJesoSx35hnTO8cK6c7o");
+  const web3 = createAlchemyWeb3("https://eth-mainnet.alchemyapi.io/v2/nZn20L-4EPgloJesoSx35hnTO8cK6c7o");
 
   const [CONFIG, SET_CONFIG] = useState({
     CONTRACT_ADDRESS_STAKE: "",
@@ -70,21 +71,20 @@ function Stake() {
   const getUserMintedNFT = async (tsupply, account, burn) => {
     const tokenIds = [];
     for (let i = 0; i <= tsupply; i++) {
-        if(!burn.includes(String(i))) {
-          const address = await blockchain.smartContractNFT.methods
-            .ownerOf(i)
-            .call();
-            console.log(address);
-          if (address === account) {
-            tokenIds.push(i);
-          }
+      if (!burn.includes(String(i))) {
+        const address = await blockchain.smartContractNFT.methods
+          .ownerOf(i)
+          .call();
+
+        if (address === account) {
+          tokenIds.push(i);
         }
+      }
     }
     return tokenIds;
   }
 
   const getUserStakedNFT = async (tokenIds) => {
-
     const stakedObjArr = [];
     for (let i = 0; i < tokenIds.length; i++) {
       const stakedObj = {};
@@ -131,36 +131,26 @@ function Stake() {
         .call();
       setReveal(reveal);
 
-      
+
 
       const cost = await blockchain.smartContractStake.methods
-      .claimCost()
-      .call();
+        .claimCost()
+        .call();
       setCost(web3.utils.fromWei(cost));
 
       // Get Burn Tokens
       const burn = await blockchain.smartContractStake.methods
-      .burnTokenIds()
-      .call();
+        .burnTokenIds()
+        .call();
       setBurnToken(burn);
-
-      // Get Staked Tokens
-
-      const stakedToken = await blockchain.smartContractStake.methods
-      .tokensOfOwner(blockchain.account)
-      .call();
-
-      const stakedNft = await getUserStakedNFT(stakedToken);
-      if (stakedNft) {
-        setStakedObj(stakedNft);
-      }
-
-      // Get User Minted NFT
 
       const tokens = await getUserMintedNFT(totalSupply, blockchain.account, burn);
       if (tokens) {
         setuserNFTToken(tokens);
-
+        const stakedNft = await getUserStakedNFT(tokens);
+        if (stakedNft) {
+          setStakedObj(stakedNft);
+        }
       }
       setLoading(false);
     }
@@ -194,7 +184,7 @@ function Stake() {
       });
   }
 
-  const unstakeNFT = async(tokenId) => {
+  const unstakeNFT = async (tokenId) => {
     setLoading(true);
     let gasLimit = CONFIG.GAS_LIMIT;
     let totalGasLimit = String(gasLimit * 1);
@@ -225,11 +215,11 @@ function Stake() {
   }
 
   const payAndClaimNFT = async (tokenId) => {
+    setId(tokenId);
     alert('When you claim your physical art piece, your NFT will be burned(destroyed).');
     setLoading(true);
     let cost = claimCost;
     cost = Web3.utils.toWei(String(cost), "ether");
-    console.log({cost});
     let gasLimit = CONFIG.GAS_LIMIT;
     let totalCostWei = String(cost * 1);
     let totalGasLimit = String(gasLimit * 1);
@@ -260,34 +250,35 @@ function Stake() {
   }
 
   const claimFreeNft = async (tokenId) => {
+    setId(tokenId);
     alert('When you claim your physical art piece, your NFT will be burned(destroyed).');
     setLoading(true);
     let gasLimit = CONFIG.GAS_LIMIT;
     let totalGasLimit = String(gasLimit * 1);
     blockchain.smartContractStake.methods
-    .claim([tokenId])
-    .send({
-      gasLimit: String(totalGasLimit),
-      to: CONFIG.CONTRACT_ADDRESS_STAKE,
-      from: blockchain.account,
-    })
-    .once("error", (err) => {
-      console.log(err);
-      setLoading(false);
-      alert('Something went wrong.');
-    })
-    .then(() => {
-      blockchain.smartContractStake.methods
-        .totalStaked()
-        .call()
-        .then((res) => {
-          setTotalStaked(res);
-        });
-      dispatch(fetchData(blockchain.account));
-      getData();
-      $('#emailmodal').modal('show');
-      setLoading(false);
-    });
+      .claim([tokenId])
+      .send({
+        gasLimit: String(totalGasLimit),
+        to: CONFIG.CONTRACT_ADDRESS_STAKE,
+        from: blockchain.account,
+      })
+      .once("error", (err) => {
+        console.log(err);
+        setLoading(false);
+        alert('Something went wrong.');
+      })
+      .then(() => {
+        blockchain.smartContractStake.methods
+          .totalStaked()
+          .call()
+          .then((res) => {
+            setTotalStaked(res);
+          });
+        dispatch(fetchData(blockchain.account));
+        getData();
+        $('#emailmodal').modal('show');
+        setLoading(false);
+      });
   }
 
 
@@ -301,7 +292,6 @@ function Stake() {
   useEffect(() => {
     getData();
   }, [blockchain.account, showModal]);
-
 
 
   return (
@@ -386,19 +376,19 @@ function Stake() {
                       nftDate = nftDate.setDate(nftDate.getDate() + 49);
                       return (
                         <>
-
                           <div className="flex-item border" key={index}>
+
                             {reveal ? <s.Image  ></s.Image> :
                               <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
                                 wid={"80"}></s.Image>}
                             <div className="center-block">
                               {nftDate > date ? (
                                 <>
-                                <span className="text-center" style={{
-                                  display:"block",
-                                  color:"#fff"
-                                }}>Time Remaining to Claim Free</span>
-                                <PublicCountdown date={nft.TIMESTAMP} />
+                                  <span className="text-center" style={{
+                                    display: "block",
+                                    color: "#fff"
+                                  }}>Time Remaining to Claim Free</span>
+                                  <PublicCountdown date={nft.TIMESTAMP} />
                                 </>
                               ) : (
                                 <button className="btn btn-claim"
@@ -423,7 +413,7 @@ function Stake() {
                                 }}
                               >Unstake</button>
 
-                               <button className="btn btn-claim"
+                              <button className="btn btn-claim"
                                 onClick={(e) => {
                                   e.preventDefault();
                                   setTimeout(() => {
@@ -434,7 +424,13 @@ function Stake() {
                             </div>
 
                             <s.SpacerLarge />
-                          </div> </>)
+                            <p style={{
+                              textAlign: "center",
+                              color: "#fff"
+                            }}>NFT #{nft.TOKEN_ID}</p>
+                          </div>
+
+                        </>)
 
 
 
@@ -479,24 +475,31 @@ function Stake() {
                     return (
                       <>
                         {newmap.indexOf(nft) == -1 ? (
-                          <div className="flex-item border" key={index}>
-                            {reveal ? <s.Image  ></s.Image> :
-                              <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
-                                wid={"80"}></s.Image>}
+                          <>
+                            <div className="flex-item border" key={index}>
+                              {reveal ? <s.Image  ></s.Image> :
+                                <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
+                                  wid={"80"}></s.Image>}
 
-                            <div className="d-flex justify-content-center">
-                              <button className="btn btn-stake"
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  setTimeout(() => {
-                                    stakeNFT(nft);
-                                  }, 1000);
-                                }}
-                              >Stake</button>
+                              <div className="d-flex justify-content-center">
+                                <button className="btn btn-stake"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    setTimeout(() => {
+                                      stakeNFT(nft);
+                                    }, 1000);
+                                  }}
+                                >Stake</button>
+                              </div>
+                              <s.SpacerSmall />
+                              <s.SpacerLarge />
+                              <p style={{
+                                textAlign: "center",
+                                color: "#fff"
+                              }}>NFT #{nft}</p>
                             </div>
-                            <s.SpacerSmall />
-                            <s.SpacerLarge />
-                          </div>
+
+                          </>
                         ) : ("")
                         }
                       </>
@@ -547,21 +550,21 @@ function Stake() {
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT</h5>
+              <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT #{id}</h5>
             </div>
             <div className="modal-body">
-              <EmailModal />
+              <EmailModal nft = {id} />
             </div>
 
           </div><button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
       </div>
 
       {/* Pop Up Modal Code */}
 
-     
+
     </>
   );
 

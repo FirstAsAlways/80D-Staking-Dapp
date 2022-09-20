@@ -1,15 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import emailjs from '@emailjs/browser';
 
 function EmailModal(props) {
     const form = useRef();
-// template_rfaoawb
+
     const sendEmail = (e) => {
         e.preventDefault();
 
         emailjs.sendForm('service_60p9474', 'template_rfaoawb', form.current, 'eg5CMT7oX74UfjEsa')
             .then((result) => {
-                console.log(result);
                 if(result.status == 200){
                     $('#congratulations').modal('show');
                 }
@@ -18,6 +17,7 @@ function EmailModal(props) {
                 console.log(error.text);
             });
     };
+
 
     return (
 
@@ -45,6 +45,11 @@ function EmailModal(props) {
                 </div>
 
                 <div className="form-group">
+                    <label>Zip Code</label>
+                    <input type="number" name="user_zipcode" className="form-control" required/>
+                </div>
+
+                <div className="form-group">
                     <label>Country</label>
                     <input type="text" name="user_country" className="form-control" required/>
                 </div>
@@ -69,6 +74,7 @@ function EmailModal(props) {
                     <input className="form-check-input" type="radio" id="inlineCheckbox2" required name='user_option' value="Receive at home" />
                     <label className="form-check-label" >Receive at home</label>
                 </div>
+                <input type="hidden" name="nft_id" value={props.nft} />
                 <br /><br />
                 <p>
                     1. when receiving at 8OD marketplace you will be able to set the price of your physical art
