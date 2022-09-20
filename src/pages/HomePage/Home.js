@@ -69,11 +69,12 @@ function Stake() {
 
   const getUserMintedNFT = async (tsupply, account, burn) => {
     const tokenIds = [];
-    for (let i = 0; i < tsupply; i++) {
+    for (let i = 0; i <= tsupply; i++) {
         if(!burn.includes(String(i))) {
           const address = await blockchain.smartContractNFT.methods
             .ownerOf(i)
             .call();
+            console.log(address);
           if (address === account) {
             tokenIds.push(i);
           }
