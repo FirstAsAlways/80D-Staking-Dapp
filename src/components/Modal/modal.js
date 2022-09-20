@@ -26,59 +26,58 @@ function EmailModal(props) {
             <form ref={form} onSubmit={sendEmail} >
                 <div className="form-group">
                     <label>Name</label>
-                    <input type="text" name="user_name" className="form-control" />
+                    <input type="text" name="user_name" className="form-control" required/>
                 </div>
 
                 <div className="form-group">
                     <label>Email</label>
-                    <input type="email" name="user_email" className="form-control" />
+                    <input type="email" name="user_email" className="form-control" required/>
                 </div>
 
                 <div className="form-group">
                     <label>Phone</label>
-                    <input type="number" name="user_phone" className="form-control" />
+                    <input type="number" name="user_phone" className="form-control" required/>
                 </div>
 
                 <div className="form-group">
                     <label>Address</label>
-                    <textarea name="user_address" className="form-control" />
+                    <textarea name="user_address" className="form-control" required/>
                 </div>
 
                 <div className="form-group">
                     <label>Country</label>
-                    <input type="text" name="user_country" className="form-control" />
+                    <input type="text" name="user_country" className="form-control" required/>
                 </div>
 
                 <div className="form-group">
                     <label>Discord Username</label>
-                    <input type="text" name="user_discord" className="form-control" />
+                    <input type="text" name="user_discord" className="form-control" required/>
                 </div>
 
                 <div className="form-group">
                     <label>Wallet Address</label>
-                    <input type="text" name="user_wallet" className="form-control" />
+                    <input type="text" name="user_wallet" className="form-control" required/>
                 </div>
 
                 <div className="form-check form-check-inline">
-                    <input className="form-check-input" type="radio" id="inlineCheckbox1" name='user_option' value="Receive at 8OD marketplace" />
+                    <input className="form-check-input" type="radio" id="inlineCheckbox1" required name='user_option' value="Receive at 8OD marketplace" />
                     <label className="form-check-label">Receive at 8OD marketplace
                     </label>
                 </div>
 
                 <div className="form-check form-check-inline">
-                    <input className="form-check-input" type="radio" id="inlineCheckbox2" name='user_option' value="Receive at home" />
+                    <input className="form-check-input" type="radio" id="inlineCheckbox2" required name='user_option' value="Receive at home" />
                     <label className="form-check-label" >Receive at home</label>
                 </div>
                 <br /><br />
                 <p>
                     1. when receiving at 8OD marketplace you will be able to set the price of your physical art
                     piece and the artpiece will be listed on the marketplace as soon as we receive it from
-                    production. A royalty of 5% of the sale price will be deducted if your art piece is sold. If you
-                    decide to receivit at home at a later point (without selling), you will be able to! shipping fees not
+                    production. A royalty of 7.5% of the sale price will be deducted if your art piece is sold. If you
+                    decide to receive it at home at a later point (without selling), you will be able to! shipping fees not
                     included. <br /><br />
                     2. when receiving at home you will get your physical art piece shipped to your address.
-                    If you wish to sell it, you will have to handle the shipping to the 8OD marketplace. Royalty fee of 10% if your
-                    physical art piece sells. A royalty of 10% of the sale price will be deducted if your art piece is sold.
+                    If you wish to sell it, you will have to handle the shipping to the 8OD marketplace. A royalty of 7.5% of the sale price will be deducted if your art piece is sold.
                 </p>
                 <br /><br />
 

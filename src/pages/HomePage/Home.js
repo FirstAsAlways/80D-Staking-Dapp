@@ -141,6 +141,7 @@ function Stake() {
       const burn = await blockchain.smartContractStake.methods
       .burnTokenIds()
       .call();
+      setBurnToken(burn);
 
       // Get Staked Tokens
 
@@ -333,7 +334,7 @@ function Stake() {
               <div className=" text-white p-3 m-auto " >
                 <span className="fa fa-info-circle" aria-hidden="true"></span>
               </div>
-              <div className="text-white text-center mt-3"><h4>Your Minted NFTs</h4></div>
+              <div className="text-white text-center mt-3"><h4>Your NFTs</h4></div>
               <div className="text-white text-center mt-2"><h1>{totalMinted}</h1></div>
             </div>
           </div>
@@ -342,8 +343,8 @@ function Stake() {
               <div className=" text-white p-3 m-auto " >
                 <span className="fa fa-hourglass" aria-hidden="true"></span>
               </div>
-              <div className="text-white text-center mt-3"><h4>Total Minted</h4></div>
-              <div className="text-white text-center mt-2"><h1>{supply}</h1></div>
+              <div className="text-white text-center mt-3"><h4>Total Claimed</h4></div>
+              <div className="text-white text-center mt-2"><h1>{burnToken.length}</h1></div>
             </div>
           </div>
           <div className="col-md-4">
@@ -546,15 +547,14 @@ function Stake() {
           <div className="modal-content">
             <div className="modal-header">
               <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT</h5>
-              <button type="button" className="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
             </div>
             <div className="modal-body">
               <EmailModal />
             </div>
 
-          </div>
+          </div><button type="button" className="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
         </div>
       </div>
 
