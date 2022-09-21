@@ -385,7 +385,7 @@ function Stake() {
                           <div className="flex-item border" key={index}>
 
                             {reveal ? <s.Image  ></s.Image> :
-                              <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
+                              <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/QmRrqpt6nrR6CPqkk1DuZtuhwrwwfXtdGxXexzpGsLpesJ"}
                                 wid={"80"}></s.Image>}
                             <div className="center-block">
                               {nftDate > date ? (
@@ -484,7 +484,7 @@ function Stake() {
                           <>
                             <div className="flex-item border" key={index}>
                               {reveal ? <s.Image  ></s.Image> :
-                                <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/Qmbd75FH26ihxB8yRJVaV24w9sChkEUY7Nf3iVXugn9r99"}
+                                <s.Image className="p-3" src={"https://gateway.pinata.cloud/ipfs/QmRrqpt6nrR6CPqkk1DuZtuhwrwwfXtdGxXexzpGsLpesJ"}
                                   wid={"80"}></s.Image>}
 
                               <div className="d-flex justify-content-center">
