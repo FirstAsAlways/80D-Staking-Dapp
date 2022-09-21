@@ -114,6 +114,8 @@ function Stake() {
         .call();
       setTotalSupply(totalSupply);
 
+      console.log({totalSupply});
+
       // Total Staked 
       const totalStaked = await blockchain.smartContractStake.methods
         .totalStaked()
@@ -125,6 +127,8 @@ function Stake() {
         .balanceOf(blockchain.account)
         .call();
       setTotalMinted(totalMinted);
+
+      console.log({totalMinted});
 
       // Revealed or Not
       const reveal = await blockchain.smartContractNFT.methods
