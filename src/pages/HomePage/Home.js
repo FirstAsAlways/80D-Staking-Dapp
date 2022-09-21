@@ -81,6 +81,7 @@ function Stake() {
         }
       }
     }
+    console.log({tokenIds});
     return tokenIds;
   }
 
@@ -147,6 +148,7 @@ function Stake() {
       const tokens = await getUserMintedNFT(totalSupply, blockchain.account, burn);
       if (tokens) {
         setuserNFTToken(tokens);
+        console.log({userNFTToken});
         const stakedNft = await getUserStakedNFT(tokens);
         if (stakedNft) {
           setStakedObj(stakedNft);
