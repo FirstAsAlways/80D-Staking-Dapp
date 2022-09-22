@@ -585,9 +585,9 @@ function Stake() {
           blockchain.errorMsg === "" ? (
            days > -1 && hours > -1 && minutes > -1 && seconds > -1 ? (
             <>
-            <p className="text-center text-white">Staking will be done after the reveal (reveal will take place 72 hours) after the end of Mint.</p>
+            <p className="text-center text-white">Staking will be done after the reveal (reveal will take place 72 hours after the end of Mint).</p>
             <s.SpacerSmall/>
-            <StakingTimer />
+            
             </>
           ) : "---"  
 
