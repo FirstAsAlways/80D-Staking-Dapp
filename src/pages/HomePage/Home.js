@@ -327,9 +327,12 @@ function Stake() {
   return (
     <>
       {loading && <Loader />}
+      <a href="https://8Od.io">
+
       <s.Image src={"config/images/logo.png"} wid={"15"} style={{
         "marginTop": "25px"
       }} />
+      </a>
       <s.SpacerLarge /><s.SpacerLarge />
       <div className="container" style={{ width: "15%" }}>
         {blockchain.account !== "" &&
