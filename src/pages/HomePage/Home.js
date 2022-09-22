@@ -6,6 +6,7 @@ import * as s from "./../../styles/globalStyles";
 import Loader from "../../components/Loader/loader";
 import PublicCountdown from "../../components/Countdown/publicCountdown";
 import EmailModal from "../../components/Modal/modal";
+import StakingTimer from "../../components/Countdown/stakingTimer";
 
 const truncate = (input, len) =>
   input.length > len ? `${input.substring(0, len)}...` : input;
@@ -81,7 +82,7 @@ function Stake() {
         }
       }
     }
-    console.log({tokenIds});
+    console.log({ tokenIds });
     return tokenIds;
   }
 
@@ -114,7 +115,7 @@ function Stake() {
         .call();
       setTotalSupply(totalSupply);
 
-      console.log({totalSupply});
+      console.log({ totalSupply });
 
       // Total Staked 
       const totalStaked = await blockchain.smartContractStake.methods
@@ -128,7 +129,7 @@ function Stake() {
         .call();
       setTotalMinted(totalMinted);
 
-      console.log({totalMinted});
+      console.log({ totalMinted });
 
       // Revealed or Not
       const reveal = await blockchain.smartContractNFT.methods
@@ -152,7 +153,7 @@ function Stake() {
       const tokens = await getUserMintedNFT(totalSupply, blockchain.account, burn);
       if (tokens) {
         setuserNFTToken(tokens);
-        console.log({userNFTToken});
+        console.log({ userNFTToken });
         const stakedNft = await getUserStakedNFT(tokens);
         if (stakedNft) {
           setStakedObj(stakedNft);
@@ -230,29 +231,29 @@ function Stake() {
     let totalCostWei = String(cost * 1);
     let totalGasLimit = String(gasLimit * 1);
     blockchain.smartContractStake.methods
-    .payAndclaim([tokenId])
-    .send({
-      gasLimit: String(totalGasLimit),
-      to: CONFIG.CONTRACT_ADDRESS_STAKE,
-      from: blockchain.account,
-      value: totalCostWei,
-    })
-    .once("error", (err) => {
-      console.log(err);
-      setLoading(false);
-    })
-    .then(() => {
-      blockchain.smartContractStake.methods
-        .totalStaked()
-        .call()
-        .then((res) => {
-          setTotalStaked(res);
-        });
-      dispatch(fetchData(blockchain.account));
-      getData();
-      $('#emailmodal').modal('show');
-      setLoading(false);
-    });
+      .payAndclaim([tokenId])
+      .send({
+        gasLimit: String(totalGasLimit),
+        to: CONFIG.CONTRACT_ADDRESS_STAKE,
+        from: blockchain.account,
+        value: totalCostWei,
+      })
+      .once("error", (err) => {
+        console.log(err);
+        setLoading(false);
+      })
+      .then(() => {
+        blockchain.smartContractStake.methods
+          .totalStaked()
+          .call()
+          .then((res) => {
+            setTotalStaked(res);
+          });
+        dispatch(fetchData(blockchain.account));
+        getData();
+        $('#emailmodal').modal('show');
+        setLoading(false);
+      });
   }
 
   const claimFreeNft = async (tokenId) => {
@@ -298,6 +299,29 @@ function Stake() {
   useEffect(() => {
     getData();
   }, [blockchain.account, showModal]);
+
+  let countDownDate = new Date("Sep 25, 2022 11:00:00 GMT +5:00").getTime();
+
+  let now = new Date().getTime();
+
+  let timeleft = countDownDate - now;
+
+  const [days, setDays] = useState();
+  const [hours, setHour] = useState();
+  const [minutes, setMint] = useState();
+  const [seconds, setSec] = useState();
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setDays(Math.floor(timeleft / (1000 * 60 * 60 * 24)));
+      setHour(
+        // Math.floor(24 * days)
+        Math.floor(((timeleft % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)))
+      );
+      setMint(Math.floor((timeleft % (1000 * 60 * 60)) / (1000 * 60)));
+      setSec(Math.floor((timeleft % (1000 * 60)) / 1000));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [days, hours, minutes, seconds]);
 
 
   return (
@@ -361,7 +385,8 @@ function Stake() {
       {/* NFT's Section */}
 
       {/* Staked NFTs Section */}
-      {blockchain.account !== "" &&
+
+      {/* {blockchain.account !== "" &&
         blockchain.smartContractStake !== null &&
         blockchain.errorMsg === "" ? (
         <>
@@ -459,14 +484,14 @@ function Stake() {
             </div>
           </div>
         </>
-      ) : ("")}
+      ) : ("")} */}
 
       {/* UnStaked NFTs Section */}
 
       <div className="jumbotron container" style={{
         background: "#01014D !important"
       }}>
-        {blockchain.account !== "" &&
+        {/* {blockchain.account !== "" &&
           blockchain.smartContractStake !== null &&
           blockchain.errorMsg === "" ? (
 
@@ -521,7 +546,9 @@ function Stake() {
             </div>
 
           </>
-        ) : (
+        ) 
+        
+        : (
           <>
             <s.connectButton
               style={{
@@ -546,8 +573,48 @@ function Stake() {
               Connect Wallet
             </s.connectButton>
           </>
-        )}
+        )} */
+        }
 
+
+        {blockchain.account !== "" &&
+          blockchain.smartContractStake !== null &&
+          blockchain.errorMsg === "" ? (
+           days > -1 && hours > -1 && minutes > -1 && seconds > -1 ? (
+            <>
+            <p className="text-center text-white">Staking will be done after the reveal (reveal will take place 72 hours) after the end of Mint.</p>
+            <s.SpacerSmall/>
+            <StakingTimer />
+            </>
+          ) : "---"  
+
+        ) : (
+        <>
+          <s.connectButton
+            style={{
+              textAlign: "center",
+              color: "#01004D",
+              cursor: "pointer",
+              margin: "auto",
+              display: "block",
+              background: "#fff",
+              border: "#17a2b8"
+            }}
+            onClick={(e) => {
+              e.preventDefault();
+              dispatch(connectWallet());
+              setTimeout(() => {
+                getData();
+                setLoading(false);
+              }, 2500);
+            }}
+            wid={"35%"}
+          >
+            Connect Wallet
+          </s.connectButton>
+        </>
+        )
+          }
       </div>
 
       {/* Modal COde */}
@@ -559,7 +626,7 @@ function Stake() {
               <h5 className="modal-title text-center" id="staticBackdropLabel">Claim Your NFT #{id}</h5>
             </div>
             <div className="modal-body">
-              <EmailModal nft = {id} />
+              <EmailModal nft={id} />
             </div>
 
           </div><button type="button" className="close" data-dismiss="modal" aria-label="Close">
